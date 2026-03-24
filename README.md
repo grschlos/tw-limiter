@@ -24,28 +24,44 @@ We compared **TW-Limiter** against the official `golang.org/x/time/rate` on an *
 
 ## Usage
 
+Installation:
+
+```bash
+go get github.com/grschlos/tw-limiter
+```
+
+Basic example:
+
 ```go
 package main
 
 import (
     "context"
+    "errors"
     "fmt"
     "time"
 
-    "https://github.com/grschlos/tw-limiter"
+    "github.com/grschlos/tw-limiter"
 )
 
 func main() {
-    // 1024 shards, 100 requests per second, burst up to 10 tokens
+    // Initialize: 1024 shards, 100 req/sec, burst capacity of 10 tokens
     l := limiter.New(1024, 100, 10)
-    ctx := context.Background()
+    defer l.Close()
 
-    res, _ := l.Allow(ctx, "user-123")
+    ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+    defer cancel()
+
+    // Check rate limit for a specific key (e.g., IP or API Key)
+    res, err := l.Allow(ctx, "user-123")
+    
+    if errors.Is(err, limiter.ErrRateLimitExceeded) {
+        fmt.Printf("Rate limit reached! Try again after %v\n", res.ResetAfter)
+        return
+    }
 
     if res.Allowed {
-        fmt.Println("Request allowed!")
-    } else {
-        fmt.Printf("Rate limit exceeded. Try again in %v\n", res.RetryAfter)
+        fmt.Printf("Success! Remaining tokens: %d\n", res.Remaining)
     }
 }
 ```
