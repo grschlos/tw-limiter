@@ -5,6 +5,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+        "github.com/grschlos/tw-limiter"
 )
 
 const nsInSec = int64(time.Second)
@@ -60,7 +62,7 @@ func (tw *TimeWheel) getShard(key string) *Shard {
 	return &tw.shards[hash&tw.shardMask]
 }
 
-func (tw *TimeWheel) Allow(ctx context.Context, key string) (Result, error) {
+func (tw *TimeWheel) Allow(ctx context.Context, key string) (limiter.Result, error) {
 	shard := tw.getShard(key)
 	now := time.Now().UnixNano()
 
@@ -90,7 +92,7 @@ func (tw *TimeWheel) Allow(ctx context.Context, key string) (Result, error) {
 	return tw.processBucket(b, now), nil
 }
 
-func (tw *TimeWheel) processBucket(b *bucket, now int64) Result {
+func (tw *TimeWheel) processBucket(b *bucket, now int64) limiter.Result {
 	for {
 		// 1. Read current values using atomics
 		oldTokens := atomic.LoadInt64(&b.tokens)
@@ -122,7 +124,7 @@ func (tw *TimeWheel) processBucket(b *bucket, now int64) Result {
 			// single uint64 with loss of accuracy?)
 			atomic.StoreInt64(&b.lastUpdate, now)
 
-			return Result{
+			return limiter.Result{
 				Allowed:    allowed,
 				Remaining:  int(newTokens),
 				ResetAfter: time.Duration((tw.maxTokens - newTokens) * nsInSec / tw.rate),
