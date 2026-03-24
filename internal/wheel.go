@@ -36,7 +36,7 @@ type TimeWheel struct {
 	maxTokens int64  // bucket capacity
 }
 
-func New(size uint32) *TimeWheel {
+func New(size uint32, rate, maxTokens int64) *TimeWheel {
 	// initializing all the shards at once
 	shards := make([]Shard, size)
 	for i := range shards {
@@ -45,6 +45,8 @@ func New(size uint32) *TimeWheel {
 	return &TimeWheel{
 		shards:    shards,
 		shardMask: size - 1,
+                rate:      rate,
+                maxTokens: maxTokens,
 	}
 }
 
