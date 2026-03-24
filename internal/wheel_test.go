@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"testing"
+
+	"golang.org/x/time/rate"
 )
 
 // BenchmarkAllowParallel checks the performance at high concurrency.
@@ -46,6 +48,19 @@ func BenchmarkAllowContention(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			_, _ = tw.Allow(ctx, key)
+		}
+	})
+}
+
+// Standard Limiter (for comparison)
+func BenchmarkStandardRateLimiter(b *testing.B) {
+	limiter := rate.NewLimiter(rate.Limit(1000), 100)
+	ctx := context.Background()
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			_ = limiter.Allow()
 		}
 	})
 }
