@@ -32,11 +32,8 @@ type TimeWheel struct {
 	shards    []Shard
 	shardMask uint32 // mask for a quick shard index calculation (n-1)
 
-	interval  int64  // one tick interval, ns
 	rate      int64  // num of tokens per second
 	maxTokens int64  // bucket capacity
-	slots     int    // num of slots in the wheel
-	cursor    uint32 // current wheel "cursor" position
 }
 
 func New(size uint32) *TimeWheel {
