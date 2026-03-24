@@ -36,7 +36,7 @@ func BenchmarkAllowParallel(b *testing.B) {
 // BenchmarkAllowContention simulates the worst-case-scenario: all the requests
 // hit the same key.
 func BenchmarkAllowContention(b *testing.B) {
-	tw := New(1024)
+	tw := New(1024, 1000, 100)
 	tw.rate = 1000
 	tw.maxTokens = 100
 	ctx := context.Background()
