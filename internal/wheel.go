@@ -2,14 +2,25 @@ package wheel
 
 import (
 	"context"
+        "errors"
 	"sync"
 	"sync/atomic"
 	"time"
+)
 
-        "github.com/grschlos/tw-limiter"
+var (
+	ErrRateLimitExceeded = errors.New("rate limit exceeded")
 )
 
 const nsInSec = int64(time.Second)
+
+// Result is a Limit Check result.
+// Useful for data transmission via HTTP-headers (X-RateLimit-Limit)
+type Result struct {
+	Allowed    bool          // Is the request allowed
+	Remaining  int           // How many tokens left in the current time window
+	ResetAfter time.Duration // Time before the limit is reset
+}
 
 // bucket keeps the current limit state for a particular user/key.
 type bucket struct {
@@ -61,7 +72,7 @@ func (tw *TimeWheel) getShard(key string) *Shard {
 	return &tw.shards[hash&tw.shardMask]
 }
 
-func (tw *TimeWheel) Allow(ctx context.Context, key string) (limiter.Result, error) {
+func (tw *TimeWheel) Allow(ctx context.Context, key string) (Result, error) {
 	shard := tw.getShard(key)
 	now := time.Now().UnixNano()
 
@@ -88,10 +99,20 @@ func (tw *TimeWheel) Allow(ctx context.Context, key string) (limiter.Result, err
 
 	// 3. Work with bucket via atomics (minimizing lock contention)
 	// This limits several requests concurrency by atomics
-	return tw.processBucket(b, now), nil
+        r := tw.processBucket(b, now)
+        if !r.Allowed {
+            return r, ErrRateLimitExceeded
+        }
+	return r, nil
 }
 
-func (tw *TimeWheel) processBucket(b *bucket, now int64) limiter.Result {
+func (tw *TimeWheel) Close() error {
+	// If tickers or background slots cleanup is added, those must be
+        // stopped here
+	return nil
+}
+
+func (tw *TimeWheel) processBucket(b *bucket, now int64) Result {
 	for {
 		// 1. Read current values using atomics
 		oldTokens := atomic.LoadInt64(&b.tokens)
@@ -122,11 +143,15 @@ func (tw *TimeWheel) processBucket(b *bucket, now int64) limiter.Result {
 			// FIXME: make sure no updates happened (pack into a
 			// single uint64 with loss of accuracy?)
 			atomic.StoreInt64(&b.lastUpdate, now)
+                        var resetAfter time.Duration
+			if tw.rate > 0 {
+				resetAfter = time.Duration((tw.maxTokens - newTokens) * nsInSec / tw.rate)
+			}
 
-			return limiter.Result{
+			return Result{
 				Allowed:    allowed,
 				Remaining:  int(newTokens),
-				ResetAfter: time.Duration((tw.maxTokens - newTokens) * nsInSec / tw.rate),
+				ResetAfter: resetAfter,
 			}
 		}
 	}

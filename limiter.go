@@ -2,21 +2,12 @@ package limiter
 
 import (
 	"context"
-	"errors"
-	"time"
+        "github.com/grschlos/tw-limiter/internal"
 )
 
-var (
-	ErrRateLimitExceeded = errors.New("rate limit exceeded")
-)
+type Result = wheel.Result
 
-// Result is a Limit Check result.
-// Useful for data transmission via HTTP-headers (X-RateLimit-Limit)
-type Result struct {
-	Allowed    bool          // Is the request allowed
-	Remaining  int           // How many tokens left in the current time window
-	ResetAfter time.Duration // Time before the limit is reset
-}
+var ErrRateLimitExceeded = wheel.ErrRateLimitExceeded
 
 // Limiter is a basic interface for the service.
 // Such a design allows for both In-Memory and Redis-based implementations.
@@ -29,4 +20,9 @@ type Limiter interface {
 
 	// Finalization (tickers termination)
 	Close() error
+}
+
+// Creates new Limiter instance. The implementation is in internal/wheel.
+func New(size uint32, rate, maxTokens int64) Limiter {
+	return wheel.New(size, rate, maxTokens)
 }
