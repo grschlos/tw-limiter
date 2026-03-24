@@ -3,7 +3,6 @@ package wheel
 import (
 	"context"
 	"fmt"
-	"sync"
 	"testing"
 )
 
@@ -27,7 +26,7 @@ func BenchmarkAllowParallel(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		// Every worker generates its own key to simulate real workload
-		key := fmt.Sprintf("user-%d", sync.Pointer(&pb))
+		key := fmt.Sprintf("user-%p", pb)
 		for pb.Next() {
 			_, _ = tw.Allow(ctx, key)
 		}
