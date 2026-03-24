@@ -2,7 +2,7 @@ package limiter
 
 import (
 	"context"
-        "github.com/grschlos/tw-limiter/internal"
+	"github.com/grschlos/tw-limiter/internal"
 )
 
 type Result = wheel.Result

@@ -2,7 +2,7 @@ package wheel
 
 import (
 	"context"
-        "errors"
+	"errors"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -43,8 +43,8 @@ type TimeWheel struct {
 	shards    []Shard
 	shardMask uint32 // mask for a quick shard index calculation (n-1)
 
-	rate      int64  // num of tokens per second
-	maxTokens int64  // bucket capacity
+	rate      int64 // num of tokens per second
+	maxTokens int64 // bucket capacity
 }
 
 func New(size uint32, rate, maxTokens int64) *TimeWheel {
@@ -56,8 +56,8 @@ func New(size uint32, rate, maxTokens int64) *TimeWheel {
 	return &TimeWheel{
 		shards:    shards,
 		shardMask: size - 1,
-                rate:      rate,
-                maxTokens: maxTokens,
+		rate:      rate,
+		maxTokens: maxTokens,
 	}
 }
 
@@ -99,16 +99,16 @@ func (tw *TimeWheel) Allow(ctx context.Context, key string) (Result, error) {
 
 	// 3. Work with bucket via atomics (minimizing lock contention)
 	// This limits several requests concurrency by atomics
-        r := tw.processBucket(b, now)
-        if !r.Allowed {
-            return r, ErrRateLimitExceeded
-        }
+	r := tw.processBucket(b, now)
+	if !r.Allowed {
+		return r, ErrRateLimitExceeded
+	}
 	return r, nil
 }
 
 func (tw *TimeWheel) Close() error {
 	// If tickers or background slots cleanup is added, those must be
-        // stopped here
+	// stopped here
 	return nil
 }
 
@@ -143,7 +143,7 @@ func (tw *TimeWheel) processBucket(b *bucket, now int64) Result {
 			// FIXME: make sure no updates happened (pack into a
 			// single uint64 with loss of accuracy?)
 			atomic.StoreInt64(&b.lastUpdate, now)
-                        var resetAfter time.Duration
+			var resetAfter time.Duration
 			if tw.rate > 0 {
 				resetAfter = time.Duration((tw.maxTokens - newTokens) * nsInSec / tw.rate)
 			}
