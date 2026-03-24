@@ -24,7 +24,7 @@ type Limiter interface {
 	// Allow shows whether the request can proceed for a
 	// particular user or app (for instance, IP or API-key).
 	// Returns Result or error (if a DB connection is lost, or whatever).
-        // Return by value to get rid of unnecessary heap allocations
+	// Return by value to get rid of unnecessary heap allocations
 	Allow(ctx context.Context, key string) (Result, error)
 
 	// Finalization (tickers termination)
