@@ -55,7 +55,6 @@ func BenchmarkAllowContention(b *testing.B) {
 // Standard Limiter (for comparison)
 func BenchmarkStandardRateLimiter(b *testing.B) {
 	limiter := rate.NewLimiter(rate.Limit(1000), 100)
-	ctx := context.Background()
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
