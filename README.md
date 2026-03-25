@@ -145,9 +145,6 @@ sudo ping -f 127.0.0.1
 
 ---
 
-
----
-
 ## Key Engineering Decisions
 
 - **Lock-Free Fast Path:** Instead of holding a write-lock for every request, we use a **CAS (Compare-And-Swap)** loop for bucket updates. This allows multiple goroutines to update the same shard simultaneously if they hit different keys.
