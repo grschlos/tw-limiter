@@ -26,13 +26,27 @@ type Limiter interface {
 	Close() error
 }
 
-// New is the only function the user needs to call.
-func New(strategy Strategy, size uint32, rate, max int64) (Limiter, error) {
-	switch strategy {
+type Config struct {
+	Strategy  Strategy
+	IfaceName string // Required for StrategyXDP (e.g., "eth0", "lo")
+	Size      uint32 // Number of slots in the Time Wheel
+	Rate      int64  // Tokens/requests per interval
+	Max       int64  // Maximum capacity or packet threshold
+}
+
+// New initializes the rate limiter using the provided Config.
+func New(cfg Config) (Limiter, error) {
+	switch cfg.Strategy {
 	case StrategyMemory:
-		return wheel.New(size, rate, max), nil
+		// We extract the fields to pass to the internal package
+		return wheel.New(cfg.Size, cfg.Rate, cfg.Max), nil
+
 	case StrategyXDP:
-		return wheel.NewXDP(size, rate, max)
+		if cfg.IfaceName == "" {
+			return nil, errors.New("network interface name is required for XDP strategy")
+		}
+		return wheel.NewXDP(cfg.IfaceName, cfg.Max)
+
 	default:
 		return nil, errors.New("unknown strategy")
 	}

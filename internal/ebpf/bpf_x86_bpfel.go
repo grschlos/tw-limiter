@@ -13,7 +13,13 @@ import (
 	"github.com/cilium/ebpf"
 )
 
-type BpfCounter struct {
+type BpfConfigVal struct {
+	_          structs.HostLayout
+	MaxPackets uint64
+	IntervalNs uint64
+}
+
+type BpfIpCounter struct {
 	_         structs.HostLayout
 	LastReset uint64
 	Count     uint64
@@ -68,15 +74,14 @@ type BpfProgramSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type BpfMapSpecs struct {
-	IpLimits *ebpf.MapSpec `ebpf:"ip_limits"`
+	ConfigMap *ebpf.MapSpec `ebpf:"config_map"`
+	IpLimits  *ebpf.MapSpec `ebpf:"ip_limits"`
 }
 
 // BpfVariableSpecs contains global variables before they are loaded into the kernel.
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type BpfVariableSpecs struct {
-	IntervalNs *ebpf.VariableSpec `ebpf:"interval_ns"`
-	MaxPackets *ebpf.VariableSpec `ebpf:"max_packets"`
 }
 
 // BpfObjects contains all objects after they have been loaded into the kernel.
@@ -99,11 +104,13 @@ func (o *BpfObjects) Close() error {
 //
 // It can be passed to LoadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type BpfMaps struct {
-	IpLimits *ebpf.Map `ebpf:"ip_limits"`
+	ConfigMap *ebpf.Map `ebpf:"config_map"`
+	IpLimits  *ebpf.Map `ebpf:"ip_limits"`
 }
 
 func (m *BpfMaps) Close() error {
 	return _BpfClose(
+		m.ConfigMap,
 		m.IpLimits,
 	)
 }
@@ -112,8 +119,6 @@ func (m *BpfMaps) Close() error {
 //
 // It can be passed to LoadBpfObjects or ebpf.CollectionSpec.LoadAndAssign.
 type BpfVariables struct {
-	IntervalNs *ebpf.Variable `ebpf:"interval_ns"`
-	MaxPackets *ebpf.Variable `ebpf:"max_packets"`
 }
 
 // BpfPrograms contains all programs after they have been loaded into the kernel.

@@ -10,7 +10,7 @@ import (
 
 type XdpLimiter struct{}
 
-func NewXDP(size uint32, rate, max int64) (*XdpLimiter, error) {
+func NewXDP(ifaceName string, max int64) (*XdpLimiter, error) {
 	return nil, errors.New("XDP strategy is only supported on Linux")
 }
 
