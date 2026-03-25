@@ -52,7 +52,7 @@ A high-performance, dual-layer rate limiting library written in Go. It combines 
 ## Installation
 
 ```bash
-go get [github.com/grschlos/tw-limiter](https://github.com/grschlos/tw-limiter)
+go get github.com/grschlos/tw-limiter
 ```
 
 ---
