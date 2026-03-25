@@ -2,27 +2,38 @@ package limiter
 
 import (
 	"context"
-	"github.com/grschlos/tw-limiter/internal"
+	"errors"
+	"github.com/grschlos/tw-limiter/internal/wheel"
 )
 
+type Strategy int
+
+const (
+	StrategyMemory Strategy = iota
+	StrategyXDP
+)
+
+var (
+	ErrRateLimitExceeded = errors.New("rate limit exceeded")
+	ErrNotSupported      = errors.New("strategy not supported on this OS")
+)
+
+// Use Type Aliasing to keep Result visible through the root package
 type Result = wheel.Result
 
-var ErrRateLimitExceeded = wheel.ErrRateLimitExceeded
-
-// Limiter is a basic interface for the service.
-// Such a design allows for both In-Memory and Redis-based implementations.
 type Limiter interface {
-	// Allow shows whether the request can proceed for a
-	// particular user or app (for instance, IP or API-key).
-	// Returns Result or error (if a DB connection is lost, or whatever).
-	// Return by value to get rid of unnecessary heap allocations
 	Allow(ctx context.Context, key string) (Result, error)
-
-	// Finalization (tickers termination)
 	Close() error
 }
 
-// Creates new Limiter instance. The implementation is in internal/wheel.
-func New(size uint32, rate, maxTokens int64) Limiter {
-	return wheel.New(size, rate, maxTokens)
+// New is the only function the user needs to call.
+func New(strategy Strategy, size uint32, rate, max int64) (Limiter, error) {
+	switch strategy {
+	case StrategyMemory:
+		return wheel.New(size, rate, max), nil
+	case StrategyXDP:
+		return wheel.NewXDP(size, rate, max)
+	default:
+		return nil, errors.New("unknown strategy")
+	}
 }
